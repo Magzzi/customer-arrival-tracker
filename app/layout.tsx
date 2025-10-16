@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Time Tracking System",
+  title: "LineAppz - Time Tracking System",
   description: "Real-time time tracking system for customer arrivals and orders",
 };
 
