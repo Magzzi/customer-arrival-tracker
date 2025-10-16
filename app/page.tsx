@@ -1,103 +1,159 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ClockProvider, useClock } from '@/components/providers/clock-provider';
+import { TimeEntry, TimeCalculations } from '@/types/time-tracking';
+import { calculateDurations } from '@/lib/time-utils';
+
+function TimeTracker() {
+  const { currentTime, timestamp } = useClock();
+  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [calculations, setCalculations] = useState<Record<number, TimeCalculations>>({});
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedEntries = localStorage.getItem('timeEntries');
+    if (savedEntries) {
+      setEntries(JSON.parse(savedEntries));
+    }
+  }, []);
+
+  // Save data to localStorage when entries change
+  useEffect(() => {
+    localStorage.setItem('timeEntries', JSON.stringify(entries));
+  }, [entries]);
+
+  // Update calculations every second
+  useEffect(() => {
+    const newCalculations: Record<number, TimeCalculations> = {};
+    entries.forEach(entry => {
+      newCalculations[entry.id] = calculateDurations(entry);
+    });
+    setCalculations(newCalculations);
+  }, [entries, timestamp]);
+
+  const logArrival = () => {
+    const newEntry: TimeEntry = {
+      id: Date.now(),
+      arrival: Date.now(),
+      start: null,
+      end: null,
+      date: new Date().toLocaleDateString(),
+    };
+    setEntries(prev => [...prev, newEntry]);
+  };
+
+  const logStart = (id: number) => {
+    setEntries(prev =>
+      prev.map(entry =>
+        entry.id === id ? { ...entry, start: Date.now() } : entry
+      )
+    );
+  };
+
+  const logEnd = (id: number) => {
+    setEntries(prev =>
+      prev.map(entry =>
+        entry.id === id ? { ...entry, end: Date.now() } : entry
+      )
+    );
+  };
+
+  const resetData = () => {
+    setEntries([]);
+    localStorage.removeItem('timeEntries');
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl">
+            Current Time: {currentTime}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center gap-4">
+          <Button onClick={logArrival}>Log Arrival</Button>
+          <Button onClick={resetData} variant="destructive">Reset Data</Button>
+          <Button 
+            onClick={() => {
+              if (entries.length > 0) {
+                import('@/lib/export-utils').then(module => {
+                  module.exportToExcel(entries);
+                });
+              }
+            }}
+            variant="outline"
+            disabled={entries.length === 0}
+          >
+            Export to Excel
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Time Entries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Actions</TableHead>
+                  <TableHead>Wait Time</TableHead>
+                  <TableHead>Order Time</TableHead>
+                  <TableHead>Total Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entries.map(entry => (
+                  <TableRow key={entry.id}>
+                    <TableCell>{entry.id}</TableCell>
+                    <TableCell>{entry.date}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {!entry.start && (
+                          <Button
+                            onClick={() => logStart(entry.id)}
+                            size="sm"
+                          >
+                            Start
+                          </Button>
+                        )}
+                        {entry.start && !entry.end && (
+                          <Button
+                            onClick={() => logEnd(entry.id)}
+                            size="sm"
+                          >
+                            End
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{calculations[entry.id]?.waitTime}</TableCell>
+                    <TableCell>{calculations[entry.id]?.orderTime}</TableCell>
+                    <TableCell>{calculations[entry.id]?.totalTime}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    <ClockProvider>
+      <TimeTracker />
+    </ClockProvider>
   );
 }
