@@ -62,6 +62,10 @@ function TimeTracker() {
     );
   };
 
+  const deleteEntry = (id: number) => {
+    setEntries(prev => prev.filter(entry => entry.id !== id));
+  };
+
   const resetData = () => {
     setEntries([]);
     localStorage.removeItem('timeEntries');
@@ -109,6 +113,7 @@ function TimeTracker() {
                   <TableHead>Wait Time</TableHead>
                   <TableHead>Order Time</TableHead>
                   <TableHead>Total Time</TableHead>
+                  <TableHead>Delete</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -139,6 +144,15 @@ function TimeTracker() {
                     <TableCell>{calculations[entry.id]?.waitTime}</TableCell>
                     <TableCell>{calculations[entry.id]?.orderTime}</TableCell>
                     <TableCell>{calculations[entry.id]?.totalTime}</TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() => deleteEntry(entry.id)}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
