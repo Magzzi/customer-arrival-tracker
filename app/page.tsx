@@ -95,6 +95,19 @@ function TimeTracker() {
           >
             Export to Excel
           </Button>
+          <Button 
+            onClick={() => {
+              if (entries.length > 0) {
+                import('@/lib/matlab-export').then(module => {
+                  module.exportToMatlab(entries);
+                });
+              }
+            }}
+            variant="secondary"
+            disabled={entries.length === 0}
+          >
+            Export to MATLAB
+          </Button>
         </CardContent>
       </Card>
 
