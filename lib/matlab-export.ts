@@ -1,5 +1,4 @@
 import { TimeEntry } from '@/types/time-tracking';
-import { calculateDurations } from './time-utils';
 
 export function exportToMatlab(entries: TimeEntry[]) {
   if (entries.length === 0) return;

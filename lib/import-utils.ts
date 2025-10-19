@@ -11,25 +11,25 @@ export function importFromExcel(file: File): Promise<TimeEntry[]> {
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData: Record<string, string | number>[] = XLSX.utils.sheet_to_json(worksheet);
         
         // Convert Excel data to TimeEntry format
         const entries: TimeEntry[] = jsonData.map((row) => {
           // Parse the ID (handle scientific notation from Excel)
           const id = typeof row['ID'] === 'number' 
             ? Math.round(row['ID']) 
-            : parseInt(row['ID']) || Date.now() + Math.random();
+            : parseInt(String(row['ID'])) || Date.now() + Math.random();
           
           // Parse date
-          const date = row['Date'] || new Date().toLocaleDateString();
+          const date = String(row['Date'] || new Date().toLocaleDateString());
           
           // Parse times from Excel format (handles "5:21:18 PM" format)
-          const arrivalTime = parseExcelTimeString(row['Arrival Time'], date);
+          const arrivalTime = parseExcelTimeString(String(row['Arrival Time']), date);
           const startTime = row['Start Time'] && row['Start Time'] !== '--:--' 
-            ? parseExcelTimeString(row['Start Time'], date)
+            ? parseExcelTimeString(String(row['Start Time']), date)
             : null;
           const endTime = row['End Time'] && row['End Time'] !== '--:--'
-            ? parseExcelTimeString(row['End Time'], date)
+            ? parseExcelTimeString(String(row['End Time']), date)
             : null;
           
           return {
