@@ -66,6 +66,22 @@ function TimeTracker() {
     setEntries(prev => prev.filter(entry => entry.id !== id));
   };
 
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const { importFromExcel } = await import('@/lib/import-utils');
+      const importedEntries = await importFromExcel(file);
+      setEntries(prev => [...prev, ...importedEntries]);
+      // Reset the input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('Failed to import file. Please ensure it has the correct format.');
+    }
+  };
+
   const resetData = () => {
     setEntries([]);
     localStorage.removeItem('timeEntries');
@@ -104,10 +120,24 @@ function TimeTracker() {
               }
             }}
             variant="secondary"
-            disabled={entries.length === 0}
+            disabled={true}
+            title="Temporarily disabled due to safety concerns"
           >
             Export to MATLAB
           </Button>
+          <Button 
+            onClick={() => document.getElementById('file-import')?.click()}
+            variant="outline"
+          >
+            Import Excel
+          </Button>
+          <input
+            id="file-import"
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+            className="hidden"
+          />
         </CardContent>
       </Card>
 
